@@ -1,0 +1,63 @@
+name: Workflow CI and Docker Build
+
+on:
+  push:
+    branches:
+      - main
+      - master
+    paths:
+      - 'MLProject/**'
+      - '.github/workflows/ci.yml'
+  workflow_dispatch:
+
+jobs:
+  ci-pipeline:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout Repository
+      uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.12'
+
+    - name: Install Dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install mlflow scikit-learn pandas numpy matplotlib seaborn
+
+    - name: Run MLflow Project (Re-train Model)
+      run: |
+        # Run MLflow Project using the local conda environment or virtualenv
+        mlflow run MLProject/ --env-manager=local
+
+    - name: Find Latest Run and Model Artifacts
+      id: model-vars
+      run: |
+        # In a local MLflow run, the model is saved under mlruns/
+        # Let's find the latest logged model directory
+        latest_run_dir=$(ls -td mlruns/0/*/ | head -n 1)
+        model_path="${latest_run_dir}artifacts/model"
+        echo "model_path=${model_path}" >> $GITHUB_ENV
+        echo "Found model at: ${model_path}"
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+
+    - name: Build Docker Image using MLflow
+      run: |
+        # Generate the Dockerfile and build the image using MLflow model build
+        # We specify --env-manager=local to avoid conda requirements in the docker container
+        mlflow models build-docker -m ${{ env.model_path }} -n npemburu6/heart-disease-rf:latest --enable-mlserver
+
+    - name: Log in to Docker Hub
+      uses: docker/login-action@v3
+      with:
+        username: ${{ secrets.DOCKERHUB_USERNAME }}
+        password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+    - name: Push Docker Image to Docker Hub
+      run: |
+        docker push npemburu6/heart-disease-rf:latest
