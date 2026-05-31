@@ -26,7 +26,7 @@ jobs:
     - name: Install Dependencies
       run: |
         python -m pip install --upgrade pip
-        pip install mlflow scikit-learn pandas numpy matplotlib seaborn
+        pip install mlflow scikit-learn pandas numpy matplotlib seaborn virtualenv
 
     - name: Run MLflow Project (Re-train Model)
       run: |
@@ -37,21 +37,23 @@ jobs:
     - name: Find Latest Run and Model Artifacts
       id: model-vars
       run: |
-        # Search recursively for the logged model directory
-        model_path=$(find . -name "model" -type d | grep "artifacts/model" | head -n 1)
-        if [ -z "$model_path" ]; then
+        # Search recursively for the logged model directory and convert to an absolute path
+        rel_path=$(find . -name "model" -type d | grep "artifacts/model" | head -n 1)
+        if [ -z "$rel_path" ]; then
           echo "Error: MLflow model directory not found!"
           exit 1
         fi
-        echo "model_path=${model_path}" >> $GITHUB_ENV
-        echo "Found model at: ${model_path}"
+        abs_model_path=$(realpath "$rel_path")
+        echo "model_path=${abs_model_path}" >> $GITHUB_ENV
+        echo "Found absolute model path at: ${abs_model_path}"
 
     - name: Set up Docker Buildx
       uses: docker/setup-buildx-action@v3
 
     - name: Build Docker Image using MLflow
       run: |
-        # Build the Docker image using local environment manager to avoid heavy conda rebuild issues
+        # Build the Docker image using MLflow model build-docker with verbose logs to assist troubleshooting
+        export MLFLOW_LOG_LEVEL=DEBUG
         mlflow models build-docker -m ${{ env.model_path }} -n npemburu6/heart-disease-rf:latest --env-manager=local
 
     - name: Log in to Docker Hub

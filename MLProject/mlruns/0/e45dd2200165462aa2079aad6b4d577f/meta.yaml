@@ -1,0 +1,15 @@
+artifact_uri: file:///D:/Dhika/Github/Submission%20Proyek%20Akhir%20Membangun%20Sistem%20Machine%20Learning%20Dicoding/Workflow-CI/MLProject/mlruns/0/e45dd2200165462aa2079aad6b4d577f/artifacts
+end_time: 1780203219168
+entry_point_name: ''
+experiment_id: '0'
+lifecycle_stage: active
+run_id: e45dd2200165462aa2079aad6b4d577f
+run_name: MLProject_RandomForest
+run_uuid: e45dd2200165462aa2079aad6b4d577f
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1780203204840
+status: 3
+tags: []
+user_id: kuzup
