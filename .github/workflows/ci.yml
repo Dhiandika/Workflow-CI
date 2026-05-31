@@ -52,9 +52,9 @@ jobs:
 
     - name: Build Docker Image using MLflow
       run: |
-        # Build the Docker image using MLflow model build-docker with verbose logs to assist troubleshooting
+        # Build the Docker image using MLflow model build-docker with dynamic Docker Hub username
         export MLFLOW_LOG_LEVEL=DEBUG
-        mlflow models build-docker -m ${{ env.model_path }} -n npemburu6/heart-disease-rf:latest --env-manager=local
+        mlflow models build-docker -m ${{ env.model_path }} -n ${{ secrets.DOCKERHUB_USERNAME }}/heart-disease-rf:latest --env-manager=local
 
     - name: Log in to Docker Hub
       uses: docker/login-action@v3
@@ -64,4 +64,4 @@ jobs:
 
     - name: Push Docker Image to Docker Hub
       run: |
-        docker push npemburu6/heart-disease-rf:latest
+        docker push ${{ secrets.DOCKERHUB_USERNAME }}/heart-disease-rf:latest
