@@ -30,16 +30,19 @@ jobs:
 
     - name: Run MLflow Project (Re-train Model)
       run: |
-        # Run MLflow Project using the local conda environment or virtualenv
+        # Force MLflow to save local run tracking inside the workspace root's mlruns folder
+        export MLFLOW_TRACKING_URI="file://${{ github.workspace }}/mlruns"
         mlflow run MLProject/ --env-manager=local
 
     - name: Find Latest Run and Model Artifacts
       id: model-vars
       run: |
-        # In a local MLflow run, the model is saved under mlruns/
-        # Let's find the latest logged model directory
-        latest_run_dir=$(ls -td mlruns/0/*/ | head -n 1)
-        model_path="${latest_run_dir}artifacts/model"
+        # Locate the model directory recursively to prevent folder path mismatch issues
+        model_path=$(find . -name "model" -type d | grep "artifacts/model" | head -n 1)
+        if [ -z "$model_path" ]; then
+          echo "Error: MLflow model directory not found!"
+          exit 1
+        fi
         echo "model_path=${model_path}" >> $GITHUB_ENV
         echo "Found model at: ${model_path}"
 
@@ -48,9 +51,8 @@ jobs:
 
     - name: Build Docker Image using MLflow
       run: |
-        # Generate the Dockerfile and build the image using MLflow model build
-        # We specify --env-manager=local to avoid conda requirements in the docker container
-        mlflow models build-docker -m ${{ env.model_path }} -n npemburu6/heart-disease-rf:latest --enable-mlserver
+        # Build the Docker image using local environment manager to avoid heavy conda rebuild issues
+        mlflow models build-docker -m ${{ env.model_path }} -n npemburu6/heart-disease-rf:latest --env-manager=local
 
     - name: Log in to Docker Hub
       uses: docker/login-action@v3
