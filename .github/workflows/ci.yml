@@ -30,14 +30,14 @@ jobs:
 
     - name: Run MLflow Project (Re-train Model)
       run: |
-        # Force MLflow to save local run tracking inside the workspace root's mlruns folder
-        export MLFLOW_TRACKING_URI="file://${{ github.workspace }}/mlruns"
-        mlflow run MLProject/ --env-manager=local
+        # Run training script directly within its expected directory to avoid Conda dependency checks on the runner
+        cd MLProject
+        python modelling.py
 
     - name: Find Latest Run and Model Artifacts
       id: model-vars
       run: |
-        # Locate the model directory recursively to prevent folder path mismatch issues
+        # Search recursively for the logged model directory
         model_path=$(find . -name "model" -type d | grep "artifacts/model" | head -n 1)
         if [ -z "$model_path" ]; then
           echo "Error: MLflow model directory not found!"
