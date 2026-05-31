@@ -30,9 +30,7 @@ jobs:
 
     - name: Run MLflow Project (Re-train Model)
       run: |
-        # Run training script directly within its expected directory to avoid Conda dependency checks on the runner
-        cd MLProject
-        python modelling.py
+        mlflow run MLProject --env-manager=local
 
     - name: Find Latest Run and Model Artifacts
       id: model-vars
